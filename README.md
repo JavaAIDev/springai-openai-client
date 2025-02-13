@@ -1,4 +1,4 @@
-# Spring AI ChatModel using Official Java SDK
+# OpenAI ChatModel using Official Java SDK
 
 [![build](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml/badge.svg)](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml)
 ![Maven Central Version](https://img.shields.io/maven-central/v/com.javaaidev/openai-chatmodel-standalone)

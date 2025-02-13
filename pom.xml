@@ -6,7 +6,7 @@
 
   <groupId>com.javaaidev</groupId>
   <artifactId>openai-chatmodel-standalone</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
 
   <name>OpenAI ChatModel</name>
   <description>Spring AI ChatModel for OpenAI using official Java SDK</description>
@@ -51,7 +51,7 @@
       <url>https://repo1.maven.org/maven2/</url>
     </repository>
   </repositories>
-  
+
   <build>
     <sourceDirectory>src/main/kotlin</sourceDirectory>
     <testSourceDirectory>src/test/kotlin</testSourceDirectory>

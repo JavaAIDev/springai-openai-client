@@ -8,6 +8,33 @@
   <artifactId>openai-chatmodel-standalone</artifactId>
   <version>0.1.0</version>
 
+  <name>OpenAI ChatModel</name>
+  <description>Spring AI ChatModel for OpenAI using official Java SDK</description>
+  <url>https://github.com/JavaAIDev/openai-chatmodel-standalone</url>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Fu Cheng</name>
+      <email>alexcheng1982@gmail.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>
+      scm:git:git://github.com/JavaAIDev/openai-chatmodel-standalone.git
+    </connection>
+    <developerConnection>
+      scm:git:ssh://github.com:JavaAIDev/openai-chatmodel-standalone.git
+    </developerConnection>
+    <url>http://github.com/JavaAIDev/openai-chatmodel-standalone</url>
+  </scm>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>17</maven.compiler.source>
@@ -24,8 +51,7 @@
       <url>https://repo1.maven.org/maven2/</url>
     </repository>
   </repositories>
-
-
+  
   <build>
     <sourceDirectory>src/main/kotlin</sourceDirectory>
     <testSourceDirectory>src/test/kotlin</testSourceDirectory>

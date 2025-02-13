@@ -1,0 +1,2 @@
+# Spring AI ChatModel
+

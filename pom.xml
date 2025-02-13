@@ -6,7 +6,7 @@
 
   <groupId>com.javaaidev</groupId>
   <artifactId>openai-chatmodel-standalone</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
 
   <name>OpenAI ChatModel</name>
   <description>Spring AI ChatModel for OpenAI using official Java SDK</description>

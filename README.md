@@ -3,7 +3,6 @@
 [![build](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml/badge.svg)](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml)
 ![Maven Central Version](https://img.shields.io/maven-central/v/com.javaaidev/openai-chatmodel-standalone)
 
-
 Spring AI `ChatModel` implementation for OpenAI using
 the [official SDK](https://github.com/openai/openai-java).
 
@@ -23,16 +22,16 @@ Add Maven dependency.
 <dependency>
   <groupId>com.javaaidev</groupId>
   <artifactId>openai-chatmodel-standalone</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
 </dependency>
 ```
 
 To use this `ChatModel`,
 
-1. Create an `OpenAIClient`
-2. Create an `OpenAIChatModel`
-3. Create a Spring AI `ChatClient.Builder` with this `ChatModel`
-4. Create a Spring AI `ChatClient` from `ChatClient.Builder`
+1. Create an `OpenAIClient`,
+2. Create an `OpenAIChatModel`,
+3. Create a Spring AI `ChatClient.Builder` with this `ChatModel`,
+4. Create a Spring AI `ChatClient` from `ChatClient.Builder`.
 
 See the code below:
 

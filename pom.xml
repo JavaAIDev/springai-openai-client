@@ -5,12 +5,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.javaaidev</groupId>
-  <artifactId>openai-chatmodel-standalone</artifactId>
-  <version>0.3.0</version>
+  <artifactId>springai-openai-client</artifactId>
+  <version>0.4.0</version>
 
   <name>OpenAI ChatModel</name>
   <description>Spring AI ChatModel for OpenAI using official Java SDK</description>
-  <url>https://github.com/JavaAIDev/openai-chatmodel-standalone</url>
+  <url>https://github.com/JavaAIDev/springai-openai-client</url>
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -27,12 +27,12 @@
 
   <scm>
     <connection>
-      scm:git:git://github.com/JavaAIDev/openai-chatmodel-standalone.git
+      scm:git:git://github.com/JavaAIDev/springai-openai-client.git
     </connection>
     <developerConnection>
-      scm:git:ssh://github.com:JavaAIDev/openai-chatmodel-standalone.git
+      scm:git:ssh://github.com:JavaAIDev/springai-openai-client.git
     </developerConnection>
-    <url>http://github.com/JavaAIDev/openai-chatmodel-standalone</url>
+    <url>http://github.com/JavaAIDev/springai-openai-client</url>
   </scm>
 
   <properties>

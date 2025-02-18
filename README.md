@@ -1,7 +1,7 @@
-# OpenAI ChatModel and Embedding using Official Java SDK
+# SpringAI OpenAI Client using Official Java SDK
 
-[![build](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml/badge.svg)](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml)
-![Maven Central Version](https://img.shields.io/maven-central/v/com.javaaidev/openai-chatmodel-standalone)
+[![build](https://github.com/JavaAIDev/springai-openai-client/actions/workflows/build.yaml/badge.svg)](https://github.com/JavaAIDev/springai-openai-client/actions/workflows/build.yaml)
+![Maven Central Version](https://img.shields.io/maven-central/v/com.javaaidev/springai-openai-client)
 
 Spring AI `ChatModel` and `EmbeddingModel` implementations for OpenAI using
 the [official SDK](https://github.com/openai/openai-java).
@@ -14,8 +14,8 @@ Add Maven dependency.
 
 <dependency>
   <groupId>com.javaaidev</groupId>
-  <artifactId>openai-chatmodel-standalone</artifactId>
-  <version>0.3.0</version>
+  <artifactId>springai-openai-client</artifactId>
+  <version>0.4.0</version>
 </dependency>
 ```
 

@@ -1,19 +1,12 @@
-# OpenAI ChatModel using Official Java SDK
+# OpenAI ChatModel and Embedding using Official Java SDK
 
 [![build](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml/badge.svg)](https://github.com/JavaAIDev/openai-chatmodel-standalone/actions/workflows/build.yaml)
 ![Maven Central Version](https://img.shields.io/maven-central/v/com.javaaidev/openai-chatmodel-standalone)
 
-Spring AI `ChatModel` implementation for OpenAI using
+Spring AI `ChatModel` and `EmbeddingModel` implementations for OpenAI using
 the [official SDK](https://github.com/openai/openai-java).
 
-The motivation of this `ChatModel` implementation is to use Spring AI with Spring 5.
-
-Supported features:
-
-- Chat completions
-- Function calling
-
-## Use ChatModel
+The motivation of this `ChatModel` and `EmbeddingModel` implementations is to use Spring AI with Spring 5.
 
 Add Maven dependency.
 
@@ -25,6 +18,15 @@ Add Maven dependency.
   <version>0.3.0</version>
 </dependency>
 ```
+
+## ChatModel
+
+Supported features:
+
+- Chat completions
+- Function calling
+
+### Use ChatModel
 
 To use this `ChatModel`,
 
@@ -45,4 +47,26 @@ val chatClient =
     ChatClient.builder(chatModel).defaultOptions(chatOptions).build()
 val response = chatClient.prompt().user("tell me a joke")
     .call().content()
+```
+
+## EmbeddingModel
+
+To use this `EmbeddingModel`,
+
+1. Create an `OpenAIClient`,
+2. Create an `OpenAIEmbeddingModel`
+
+See the code below:
+
+```kotlin
+val client = OpenAIOkHttpClient.fromEnv()
+val embeddingModel = OpenAIEmbeddingModel(client)
+val response = embeddingModel.call(
+    EmbeddingRequest(
+        listOf("hello", "world"),
+        OpenAIEmbeddingOptions.builder()
+            .model("text-embedding-3-small")
+            .build()
+    )
+)
 ```

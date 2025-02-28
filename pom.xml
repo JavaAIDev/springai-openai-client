@@ -43,7 +43,7 @@
     <kotlin.code.style>official</kotlin.code.style>
     <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
     <spring-ai.version>1.0.0-M5</spring-ai.version>
-    <openai-java.version>0.30.0</openai-java.version>
+    <openai-java.version>0.23.1</openai-java.version>
   </properties>
 
   <repositories>

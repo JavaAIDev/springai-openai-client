@@ -6,7 +6,8 @@
 Spring AI `ChatModel` and `EmbeddingModel` implementations for OpenAI using
 the [official SDK](https://github.com/openai/openai-java).
 
-The motivation of this `ChatModel` and `EmbeddingModel` implementations is to use Spring AI with Spring 5.
+The motivation of this `ChatModel` and `EmbeddingModel` implementations is to use Spring AI with
+Spring 5.
 
 Add Maven dependency.
 
@@ -41,7 +42,7 @@ See the code below:
 val client = OpenAIOkHttpClient.fromEnv()
 val chatModel = OpenAIChatModel(client)
 val chatOptions = OpenAiChatOptions.builder()
-    .model("gpt-3.5-turbo")
+    .model("gpt-4o-mini")
     .build()
 val chatClient =
     ChatClient.builder(chatModel).defaultOptions(chatOptions).build()

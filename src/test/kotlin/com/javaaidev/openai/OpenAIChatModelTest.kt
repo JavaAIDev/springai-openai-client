@@ -19,7 +19,7 @@ class OpenAIChatModelTest {
         val client = OpenAIOkHttpClient.fromEnv()
         val chatModel = OpenAIChatModel(client, CustomFunctionCallbackResolver(objectMapper))
         val chatOptions = OpenAIChatOptions.builder()
-            .model("gpt-3.5-turbo")
+            .model("gpt-4o-mini")
             .build()
         chatClient =
             ChatClient.builder(chatModel).defaultOptions(chatOptions).build()

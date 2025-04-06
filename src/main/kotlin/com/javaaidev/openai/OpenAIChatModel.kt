@@ -100,7 +100,9 @@ class OpenAIChatModel(
                             )
                             .build()
                     }?.let {
-                        messageParamBuilder.toolCalls(it)
+                        if (it.isNotEmpty()) {
+                            messageParamBuilder.toolCalls(it)
+                        }
                     }
                     paramsBuilder.addMessage(messageParamBuilder.build())
                 }

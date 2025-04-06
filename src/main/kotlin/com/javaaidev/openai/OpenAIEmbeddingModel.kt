@@ -1,7 +1,7 @@
 package com.javaaidev.openai
 
 import com.openai.client.OpenAIClient
-import com.openai.models.EmbeddingCreateParams
+import com.openai.models.embeddings.EmbeddingCreateParams
 import org.springframework.ai.chat.metadata.EmptyUsage
 import org.springframework.ai.document.Document
 import org.springframework.ai.embedding.*

@@ -3,7 +3,9 @@ package com.javaaidev.openai
 import com.openai.client.OpenAIClient
 import com.openai.core.JsonObject
 import com.openai.core.JsonValue
-import com.openai.models.*
+import com.openai.models.FunctionDefinition
+import com.openai.models.FunctionParameters
+import com.openai.models.chat.completions.*
 import org.springframework.ai.chat.messages.AssistantMessage
 import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.ToolResponseMessage

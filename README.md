@@ -16,7 +16,7 @@ Add Maven dependency.
 <dependency>
   <groupId>com.javaaidev</groupId>
   <artifactId>springai-openai-client</artifactId>
-  <version>0.4.3</version>
+  <version>0.5.0</version>
 </dependency>
 ```
 

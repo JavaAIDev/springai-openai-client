@@ -2,6 +2,7 @@
 
 [![build](https://github.com/JavaAIDev/springai-openai-client/actions/workflows/build.yaml/badge.svg)](https://github.com/JavaAIDev/springai-openai-client/actions/workflows/build.yaml)
 ![Maven Central Version](https://img.shields.io/maven-central/v/com.javaaidev/springai-openai-client)
+[![javadoc](https://javadoc.io/badge2/com.javaaidev/springai-openai-client/javadoc.svg)](https://javadoc.io/doc/com.javaaidev/springai-openai-client)
 
 Spring AI `ChatModel` and `EmbeddingModel` implementations for OpenAI using
 the [official SDK](https://github.com/openai/openai-java).

@@ -6,7 +6,7 @@
 
   <groupId>com.javaaidev</groupId>
   <artifactId>springai-openai-client</artifactId>
-  <version>0.5.0</version>
+  <version>0.5.1</version>
 
   <name>OpenAI ChatModel</name>
   <description>Spring AI ChatModel for OpenAI using official Java SDK</description>
@@ -37,11 +37,12 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <java.version>17</java.version>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
     <kotlin.version>1.9.25</kotlin.version>
     <kotlin.code.style>official</kotlin.code.style>
-    <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
+    <kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
     <spring-ai.version>1.0.0-M5</spring-ai.version>
     <openai-java.version>0.44.3</openai-java.version>
   </properties>
@@ -91,17 +92,41 @@
           </executions>
         </plugin>
         <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.6.3</version>
+          <groupId>org.jetbrains.dokka</groupId>
+          <artifactId>dokka-maven-plugin</artifactId>
+          <version>2.0.0</version>
           <executions>
             <execution>
-              <id>attach-javadocs</id>
+              <phase>package</phase>
+              <goals>
+                <goal>dokka</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <jdkVersion>${java.version}</jdkVersion>
+            <pluginsConfiguration>
+              <org.jetbrains.dokka.base.DokkaBase>
+                <footerMessage>(c) Fu Cheng @ JavaAIDev.com 2025</footerMessage>
+              </org.jetbrains.dokka.base.DokkaBase>
+            </pluginsConfiguration>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.3.0</version>
+          <executions>
+            <execution>
+              <id>dokka-jar</id>
+              <phase>package</phase>
               <goals>
                 <goal>jar</goal>
               </goals>
               <configuration>
-                <failOnError>false</failOnError>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${project.build.directory}/dokka</classesDirectory>
+                <skipIfEmpty>true</skipIfEmpty>
               </configuration>
             </execution>
           </executions>
@@ -161,8 +186,12 @@
         <artifactId>maven-source-plugin</artifactId>
       </plugin>
       <plugin>
+        <groupId>org.jetbrains.dokka</groupId>
+        <artifactId>dokka-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
+        <artifactId>maven-jar-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

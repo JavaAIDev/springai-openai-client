@@ -91,6 +91,11 @@ class OpenAIChatModel(
                 is SystemMessage -> paramsBuilder.addSystemMessage(message.text)
                 is AssistantMessage -> {
                     val messageParamBuilder = ChatCompletionAssistantMessageParam.builder()
+                    val contentParts = mutableListOf(
+                        ChatCompletionAssistantMessageParam.Content.ChatCompletionRequestAssistantMessageContentPart.ofText(
+                            ChatCompletionContentPartText.builder().text(message.text).build()
+                        )
+                    )
                     message.toolCalls?.map { toolCall ->
                         ChatCompletionMessageToolCall.builder()
                             .id(toolCall.id)
@@ -106,6 +111,7 @@ class OpenAIChatModel(
                             messageParamBuilder.toolCalls(it)
                         }
                     }
+                    messageParamBuilder.contentOfArrayOfContentParts(contentParts)
                     paramsBuilder.addMessage(messageParamBuilder.build())
                 }
 

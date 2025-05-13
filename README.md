@@ -17,7 +17,7 @@ Add Maven dependency.
 <dependency>
   <groupId>com.javaaidev</groupId>
   <artifactId>springai-openai-client</artifactId>
-  <version>0.5.1</version>
+  <version>0.6.0</version>
 </dependency>
 ```
 
@@ -41,11 +41,11 @@ See the code below:
 
 ```kotlin
 val client = OpenAIOkHttpClient.fromEnv()
-val chatModel = OpenAIChatModel(client)
+val chatModel = OpenAIChatModel(client, DefaultToolCallingManager.builder().toolCallbackResolver(CustomToolCallbackResolver()).build())
 val chatOptions = OpenAiChatOptions.builder()
     .model("gpt-4o-mini")
     .build()
-val chatClient =
+chatClient =
     ChatClient.builder(chatModel).defaultOptions(chatOptions).build()
 val response = chatClient.prompt().user("tell me a joke")
     .call().content()

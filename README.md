@@ -41,7 +41,8 @@ See the code below:
 
 ```kotlin
 val client = OpenAIOkHttpClient.fromEnv()
-val chatModel = OpenAIChatModel(client, DefaultToolCallingManager.builder().toolCallbackResolver(CustomToolCallbackResolver()).build())
+val chatModel = OpenAIChatModel(client, 
+    DefaultToolCallingManager.builder().toolCallbackResolver(CustomToolCallbackResolver()).build())
 val chatOptions = OpenAiChatOptions.builder()
     .model("gpt-4o-mini")
     .build()

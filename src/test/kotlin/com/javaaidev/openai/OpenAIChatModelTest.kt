@@ -1,24 +1,23 @@
 package com.javaaidev.openai
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.ai.chat.client.ChatClient
-import org.springframework.ai.model.function.FunctionCallback
-import org.springframework.ai.model.function.FunctionCallbackResolver
+import org.springframework.ai.model.tool.DefaultToolCallingManager
+import org.springframework.ai.tool.ToolCallback
+import org.springframework.ai.tool.function.FunctionToolCallback
+import org.springframework.ai.tool.resolution.ToolCallbackResolver
 import java.util.function.Function
 import kotlin.test.assertNotNull
 
 class OpenAIChatModelTest {
     private val chatClient: ChatClient
-    private val objectMapper = jacksonObjectMapper()
 
     init {
         val client = OpenAIOkHttpClient.fromEnv()
-        val chatModel = OpenAIChatModel(client, CustomFunctionCallbackResolver(objectMapper))
-        val chatOptions = OpenAIChatOptions.builder()
+        val chatModel = OpenAIChatModel(client, DefaultToolCallingManager.builder().toolCallbackResolver(CustomToolCallbackResolver()).build())
+        val chatOptions = OpenAiChatOptions.builder()
             .model("gpt-4o-mini")
             .build()
         chatClient =
@@ -34,10 +33,10 @@ class OpenAIChatModelTest {
     }
 
     @Test
-    @DisplayName("Function calling")
-    fun testFunctionCalling() {
+    @DisplayName("Tool calling")
+    fun testToolCalling() {
         val response = chatClient.prompt()
-            .functions("toUppercase")
+            .toolNames("toUppercase")
             .user("what's the uppercase of Hello")
             .call().content()
         assertNotNull(response)
@@ -54,16 +53,13 @@ class OpenAIChatModelTest {
 
     }
 
-    private class CustomFunctionCallbackResolver(private val objectMapper: ObjectMapper) :
-        FunctionCallbackResolver {
-        override fun resolve(name: String): FunctionCallback {
+    private class CustomToolCallbackResolver :
+        ToolCallbackResolver {
+        override fun resolve(name: String): ToolCallback {
 
-            return FunctionCallback.builder()
-                .function("toUppercase", ToUppercase())
+            return FunctionToolCallback.builder("toUppercase", ToUppercase())
                 .description("Convert a string to its uppercase")
                 .inputType(ToUppercaseRequest::class.java)
-                .objectMapper(objectMapper)
-                .schemaType(FunctionCallback.SchemaType.JSON_SCHEMA)
                 .build()
         }
 

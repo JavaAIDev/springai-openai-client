@@ -11,24 +11,76 @@ import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.ToolResponseMessage
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata
-import org.springframework.ai.chat.model.AbstractToolCallSupport
 import org.springframework.ai.chat.model.ChatModel
 import org.springframework.ai.chat.model.ChatResponse
 import org.springframework.ai.chat.model.Generation
+import org.springframework.ai.chat.prompt.ChatOptions
 import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.ai.model.ModelOptionsUtils
-import org.springframework.ai.model.function.FunctionCallbackResolver
-import org.springframework.ai.model.function.FunctionCallingOptions
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate
+import org.springframework.ai.model.tool.ToolCallingChatOptions
+import org.springframework.ai.model.tool.ToolCallingManager
+import org.springframework.ai.model.tool.ToolExecutionResult
 import org.springframework.util.MimeType
 import org.springframework.util.MimeTypeUtils
 import java.util.*
 
 class OpenAIChatModel(
     private val openAIClient: OpenAIClient,
-    functionCallbackResolver: FunctionCallbackResolver? = null
-) : AbstractToolCallSupport(functionCallbackResolver), ChatModel {
+    manager: ToolCallingManager? = null,
+    options: OpenAiChatOptions? = null,
+) : ChatModel {
+    private val defaultOptions = options ?: OpenAiChatOptions.builder().build()
+    private val toolCallingManager = manager ?: ToolCallingManager.builder().build()
+    private val toolExecutionEligibilityPredicate = DefaultToolExecutionEligibilityPredicate()
 
     override fun call(prompt: Prompt): ChatResponse {
+        var runtimeOptions: OpenAiChatOptions? = null
+        if (prompt.options != null) {
+            runtimeOptions = if (prompt.options is ToolCallingChatOptions) {
+                ModelOptionsUtils.copyToTarget(
+                    prompt.options as ToolCallingChatOptions,
+                    ToolCallingChatOptions::class.java,
+                    OpenAiChatOptions::class.java
+                )
+            } else {
+                ModelOptionsUtils.copyToTarget(
+                    prompt.options, ChatOptions::class.java,
+                    OpenAiChatOptions::class.java
+                )
+            }
+        }
+
+        val requestOptions = ModelOptionsUtils.merge(
+            runtimeOptions, this.defaultOptions,
+            OpenAiChatOptions::class.java
+        )
+
+        if (runtimeOptions != null) {
+            requestOptions.httpHeaders = mergeHttpHeaders(runtimeOptions.httpHeaders, this.defaultOptions.httpHeaders)
+            requestOptions.isInternalToolExecutionEnabled = ModelOptionsUtils.mergeOption<Boolean>(
+                runtimeOptions.internalToolExecutionEnabled,
+                this.defaultOptions.internalToolExecutionEnabled
+            )
+            requestOptions.toolNames = ToolCallingChatOptions.mergeToolNames(
+                runtimeOptions.toolNames,
+                this.defaultOptions.toolNames
+            )
+            requestOptions.toolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(
+                runtimeOptions.toolCallbacks,
+                this.defaultOptions.toolCallbacks
+            )
+            requestOptions.toolContext = ToolCallingChatOptions.mergeToolContext(
+                runtimeOptions.toolContext,
+                this.defaultOptions.toolContext
+            )
+        } else {
+            requestOptions.httpHeaders = this.defaultOptions.httpHeaders
+            requestOptions.isInternalToolExecutionEnabled = this.defaultOptions.internalToolExecutionEnabled
+            requestOptions.toolNames = this.defaultOptions.toolNames
+            requestOptions.toolCallbacks = this.defaultOptions.toolCallbacks
+            requestOptions.toolContext = this.defaultOptions.toolContext
+        }
         return internalCall(prompt, null)
     }
 
@@ -44,7 +96,7 @@ class OpenAIChatModel(
                             ChatCompletionContentPartText.builder().text(message.text).build()
                         )
                     )
-                    message.media?.map { media ->
+                    message.media.map { media ->
                         when (media.mimeType) {
                             MimeTypeUtils.parseMimeType("audio/mp3") -> ChatCompletionContentPart.ofInputAudio(
                                 ChatCompletionContentPartInputAudio.builder()
@@ -78,7 +130,7 @@ class OpenAIChatModel(
                                     .build()
                             )
                         }
-                    }?.let {
+                    }.let {
                         contentParts.addAll(it)
                     }
                     paramsBuilder.addMessage(
@@ -96,7 +148,7 @@ class OpenAIChatModel(
                             ChatCompletionContentPartText.builder().text(message.text).build()
                         )
                     )
-                    message.toolCalls?.map { toolCall ->
+                    message.toolCalls.map { toolCall ->
                         ChatCompletionMessageToolCall.builder()
                             .id(toolCall.id)
                             .function(
@@ -106,7 +158,7 @@ class OpenAIChatModel(
                                     .build()
                             )
                             .build()
-                    }?.let {
+                    }.let {
                         if (it.isNotEmpty()) {
                             messageParamBuilder.toolCalls(it)
                         }
@@ -134,17 +186,17 @@ class OpenAIChatModel(
             paramsBuilder.temperature(it)
         }
 
-        if (prompt.options is FunctionCallingOptions) {
-            val tools = (prompt.options as FunctionCallingOptions).functions?.let {
-                resolveFunctionCallbacks(it).map { functionCallback ->
+        if (prompt.options is ToolCallingChatOptions) {
+            val tools = (prompt.options as ToolCallingChatOptions).let {
+                toolCallingManager.resolveToolDefinitions(it).map { toolDefinition ->
                     val parametersMap =
-                        ModelOptionsUtils.jsonToMap(functionCallback.inputTypeSchema)
+                        ModelOptionsUtils.jsonToMap(toolDefinition.inputSchema())
                     val jsonValue = JsonValue.from(parametersMap)
                     ChatCompletionTool.builder()
                         .function(
                             FunctionDefinition.builder()
-                                .name(functionCallback.name)
-                                .description(functionCallback.description)
+                                .name(toolDefinition.name())
+                                .description(toolDefinition.description())
                                 .parameters(
                                     FunctionParameters.builder()
                                         .putAllAdditionalProperties((jsonValue as JsonObject).values)
@@ -155,7 +207,7 @@ class OpenAIChatModel(
                         .build()
                 }
             }
-            if (tools?.isNotEmpty() == true) {
+            if (tools.isNotEmpty()) {
                 paramsBuilder.tools(tools)
             }
         }
@@ -171,9 +223,19 @@ class OpenAIChatModel(
             )
         }
         val response = ChatResponse.builder().generations(generations).build()
-        if (isToolCall(response, setOf("TOOL_CALLS", "STOP"))) {
-            val toolCallConversation = handleToolCalls(prompt, response)
-            return this.internalCall(Prompt(toolCallConversation, prompt.options), response)
+        if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.options, response)) {
+            val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
+            if (toolExecutionResult.returnDirect()) {
+                return ChatResponse.builder()
+                    .from(response)
+                    .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+                    .build()
+            } else {
+                return this.internalCall(
+                    Prompt(toolExecutionResult.conversationHistory(), prompt.options),
+                    response
+                )
+            }
         }
         return response
     }
@@ -225,5 +287,14 @@ class OpenAIChatModel(
                 )
             }
         }
+    }
+
+    private fun mergeHttpHeaders(
+        runtimeHttpHeaders: Map<String, String>,
+        defaultHttpHeaders: Map<String, String>
+    ): Map<String, String> {
+        val mergedHttpHeaders = HashMap(defaultHttpHeaders)
+        mergedHttpHeaders.putAll(runtimeHttpHeaders)
+        return mergedHttpHeaders
     }
 }

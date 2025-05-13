@@ -6,7 +6,7 @@
 
   <groupId>com.javaaidev</groupId>
   <artifactId>springai-openai-client</artifactId>
-  <version>0.6.0</version>
+  <version>0.6.1</version>
 
   <name>OpenAI ChatModel</name>
   <description>Spring AI ChatModel for OpenAI using official Java SDK</description>
@@ -184,11 +184,6 @@
     <dependency>
       <groupId>org.springframework.ai</groupId>
       <artifactId>spring-ai-client-chat</artifactId>
-      <version>${spring-ai.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-openai</artifactId>
       <version>${spring-ai.version}</version>
     </dependency>
     <dependency>

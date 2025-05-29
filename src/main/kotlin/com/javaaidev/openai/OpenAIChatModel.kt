@@ -58,7 +58,7 @@ class OpenAIChatModel(
 
         if (runtimeOptions != null) {
             requestOptions.httpHeaders = mergeHttpHeaders(runtimeOptions.httpHeaders, this.defaultOptions.httpHeaders)
-            requestOptions.isInternalToolExecutionEnabled = ModelOptionsUtils.mergeOption<Boolean>(
+            requestOptions.internalToolExecutionEnabled = ModelOptionsUtils.mergeOption<Boolean>(
                 runtimeOptions.internalToolExecutionEnabled,
                 this.defaultOptions.internalToolExecutionEnabled
             )
@@ -76,7 +76,7 @@ class OpenAIChatModel(
             )
         } else {
             requestOptions.httpHeaders = this.defaultOptions.httpHeaders
-            requestOptions.isInternalToolExecutionEnabled = this.defaultOptions.internalToolExecutionEnabled
+            requestOptions.internalToolExecutionEnabled = this.defaultOptions.internalToolExecutionEnabled
             requestOptions.toolNames = this.defaultOptions.toolNames
             requestOptions.toolCallbacks = this.defaultOptions.toolCallbacks
             requestOptions.toolContext = this.defaultOptions.toolContext

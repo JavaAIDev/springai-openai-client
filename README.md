@@ -17,7 +17,7 @@ Add Maven dependency.
 <dependency>
   <groupId>com.javaaidev</groupId>
   <artifactId>springai-openai-client</artifactId>
-  <version>0.6.0</version>
+  <version>0.7.0</version>
 </dependency>
 ```
 
@@ -27,6 +27,7 @@ Supported features:
 
 - Chat completions
 - Function calling
+- Streaming mode
 
 ### Use ChatModel
 
@@ -50,6 +51,19 @@ chatClient =
     ChatClient.builder(chatModel).defaultOptions(chatOptions).build()
 val response = chatClient.prompt().user("tell me a joke")
     .call().content()
+```
+
+### Streaming
+
+Streaming mode is also supported.
+
+```kotlin
+val builder = StringBuilder()
+chatClient.prompt().user("tell me a joke")
+    .stream().chatResponse().doOnNext {
+        builder.append(it.result.output.text)
+    }.blockLast()
+val result = builder.toString()
 ```
 
 ## EmbeddingModel

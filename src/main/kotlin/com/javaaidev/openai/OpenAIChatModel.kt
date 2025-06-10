@@ -23,6 +23,7 @@ import org.springframework.ai.model.tool.ToolCallingManager
 import org.springframework.ai.model.tool.ToolExecutionResult
 import org.springframework.util.MimeType
 import org.springframework.util.MimeTypeUtils
+import reactor.core.publisher.Flux
 import java.util.*
 
 class OpenAIChatModel(
@@ -35,6 +36,81 @@ class OpenAIChatModel(
     private val toolExecutionEligibilityPredicate = DefaultToolExecutionEligibilityPredicate()
 
     override fun call(prompt: Prompt): ChatResponse {
+        val requestPrompt = buildRequestPrompt(prompt)
+        return internalCall(requestPrompt, null)
+    }
+
+    private fun internalCall(prompt: Prompt, previousChatResponse: ChatResponse?): ChatResponse {
+        val completion = openAIClient.chat().completions().create(buildChatCompletionCreateParams(prompt))
+        val generations = completion.choices().map { choice ->
+            buildGeneration(
+                choice, mapOf(
+                    "id" to completion.id(),
+                    "index" to choice.index(),
+                    "finishReason" to choice.finishReason().value().name
+                )
+            )
+        }
+        val response = ChatResponse.builder().generations(generations).build()
+        if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.options, response)) {
+            val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
+            if (toolExecutionResult.returnDirect()) {
+                return ChatResponse.builder()
+                    .from(response)
+                    .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+                    .build()
+            } else {
+                return this.internalCall(
+                    Prompt(toolExecutionResult.conversationHistory(), prompt.options),
+                    response
+                )
+            }
+        }
+        return response
+    }
+
+    override fun stream(prompt: Prompt): Flux<ChatResponse> {
+        val requestPrompt = buildRequestPrompt(prompt)
+        return internalStream(requestPrompt, null)
+    }
+
+    private fun internalStream(prompt: Prompt, previousChatResponse: ChatResponse?): Flux<ChatResponse> {
+        return Flux.fromStream(openAIClient.chat().completions().createStreaming(buildChatCompletionCreateParams(prompt)).stream().map { chunk ->
+            val generations = chunk.choices().map { choice ->
+                buildGeneration(
+                    choice, mapOf(
+                        "id" to chunk.id(),
+                        "index" to choice.index(),
+                        "finishReason" to choice.finishReason().map { reason -> reason.value().name }.orElse("")
+                    )
+                )
+            }.toList()
+            ChatResponse.builder().generations(generations).build()
+        }).flatMap { response ->
+            if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.options, response)) {
+                Flux.defer {
+                    val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
+                    if (toolExecutionResult.returnDirect()) {
+                        Flux.just(
+                            ChatResponse.builder()
+                                .from(response)
+                                .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+                                .build()
+                        )
+                    } else {
+                        this.internalStream(
+                            Prompt(toolExecutionResult.conversationHistory(), prompt.options),
+                            response
+                        )
+                    }
+                }
+            } else {
+                Flux.just(response)
+            }
+        }
+    }
+
+    private fun buildRequestPrompt(prompt: Prompt): Prompt {
         var runtimeOptions: OpenAiChatOptions? = null
         if (prompt.options != null) {
             runtimeOptions = if (prompt.options is ToolCallingChatOptions) {
@@ -81,10 +157,10 @@ class OpenAIChatModel(
             requestOptions.toolCallbacks = this.defaultOptions.toolCallbacks
             requestOptions.toolContext = this.defaultOptions.toolContext
         }
-        return internalCall(prompt, null)
+        return prompt.mutate().chatOptions(requestOptions).build()
     }
 
-    private fun internalCall(prompt: Prompt, previousChatResponse: ChatResponse?): ChatResponse {
+    private fun buildChatCompletionCreateParams(prompt: Prompt): ChatCompletionCreateParams {
         val paramsBuilder = ChatCompletionCreateParams.builder()
 
         prompt.instructions.forEach { message ->
@@ -211,34 +287,9 @@ class OpenAIChatModel(
                 paramsBuilder.tools(tools)
             }
         }
-
-        val completion = openAIClient.chat().completions().create(paramsBuilder.build())
-        val generations = completion.choices().map { choice ->
-            buildGeneration(
-                choice, mapOf(
-                    "id" to completion.id(),
-                    "index" to choice.index(),
-                    "finishReason" to choice.finishReason().value().name
-                )
-            )
-        }
-        val response = ChatResponse.builder().generations(generations).build()
-        if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.options, response)) {
-            val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
-            if (toolExecutionResult.returnDirect()) {
-                return ChatResponse.builder()
-                    .from(response)
-                    .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-                    .build()
-            } else {
-                return this.internalCall(
-                    Prompt(toolExecutionResult.conversationHistory(), prompt.options),
-                    response
-                )
-            }
-        }
-        return response
+        return paramsBuilder.build()
     }
+
 
     private fun buildGeneration(
         choice: ChatCompletion.Choice,
@@ -258,6 +309,28 @@ class OpenAIChatModel(
         val metadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason)
         val assistantMessage =
             AssistantMessage(choice.message().content().orElse(""), metadata, toolCalls, listOf())
+        return Generation(assistantMessage, metadataBuilder.build())
+    }
+
+    private fun buildGeneration(
+        choice: ChatCompletionChunk.Choice,
+        metadata: Map<String, Any>
+    ): Generation {
+        val toolCalls = choice.delta().toolCalls().map { calls ->
+            calls.filter { it.id().isPresent }
+                .map { toolCall ->
+                    AssistantMessage.ToolCall(
+                        toolCall.id().orElse(""),
+                        "function",
+                        toolCall.function().flatMap { it.name() }.orElse(""),
+                        toolCall.function().flatMap { it.arguments() }.orElse("")
+                    )
+                }
+        }.orElse(listOf())
+        val finishReason = choice.finishReason().map { it.value().name }.orElse("")
+        val metadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason)
+        val assistantMessage =
+            AssistantMessage(choice.delta().content().orElse(""), metadata, toolCalls, listOf())
         return Generation(assistantMessage, metadataBuilder.build())
     }
 

@@ -10,6 +10,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback
 import org.springframework.ai.tool.resolution.ToolCallbackResolver
 import java.util.function.Function
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class OpenAIChatModelTest {
     private val chatClient: ChatClient
@@ -33,6 +34,18 @@ class OpenAIChatModelTest {
         val response = chatClient.prompt().user("tell me a joke")
             .call().content()
         assertNotNull(response)
+    }
+
+    @Test
+    @DisplayName("Simple streaming completion")
+    fun testStreamCompletion() {
+        val builder = StringBuilder()
+        chatClient.prompt().user("tell me a joke")
+            .stream().chatResponse().doOnNext {
+                builder.append(it.result.output.text)
+            }.blockLast()
+        val result = builder.toString()
+        assertTrue { result.isNotEmpty() }
     }
 
     @Test

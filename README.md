@@ -10,14 +10,14 @@ the [official SDK](https://github.com/openai/openai-java).
 The motivation of this `ChatModel` and `EmbeddingModel` implementations is to use Spring AI with
 Spring 5.
 
-Add Maven dependency.
+Add Maven dependency of the latest version.
 
 ```xml
 
 <dependency>
   <groupId>com.javaaidev</groupId>
   <artifactId>springai-openai-client</artifactId>
-  <version>0.8.0</version>
+  <version>${VERSION}</version>
 </dependency>
 ```
 

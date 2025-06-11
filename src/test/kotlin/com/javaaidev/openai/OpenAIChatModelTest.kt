@@ -58,6 +58,19 @@ class OpenAIChatModelTest {
         assertNotNull(response)
     }
 
+    @Test
+    @DisplayName("Stream tool calling")
+    fun testStreamToolCalling() {
+        val builder = StringBuilder()
+        chatClient.prompt().toolNames("toUppercase")
+            .user("what's the uppercase of Hello")
+            .stream().chatResponse().doOnNext {
+                builder.append(it.result.output.text)
+            }.blockLast()
+        val result = builder.toString()
+        assertTrue { result.isNotEmpty() }
+    }
+
     class ToUppercaseRequest(var input: String? = null)
 
     class ToUppercaseResponse(var output: String? = null)

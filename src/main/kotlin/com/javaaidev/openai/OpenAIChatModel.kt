@@ -24,7 +24,9 @@ import org.springframework.ai.model.tool.ToolExecutionResult
 import org.springframework.util.MimeType
 import org.springframework.util.MimeTypeUtils
 import reactor.core.publisher.Flux
+import reactor.core.scheduler.Schedulers
 import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 class OpenAIChatModel(
     private val openAIClient: OpenAIClient,
@@ -34,6 +36,7 @@ class OpenAIChatModel(
     private val defaultOptions = options ?: OpenAiChatOptions.builder().build()
     private val toolCallingManager = manager ?: ToolCallingManager.builder().build()
     private val toolExecutionEligibilityPredicate = DefaultToolExecutionEligibilityPredicate()
+    private val chunkMerger = OpenAiStreamFunctionCallingHelper()
 
     override fun call(prompt: Prompt): ChatResponse {
         val requestPrompt = buildRequestPrompt(prompt)
@@ -75,39 +78,64 @@ class OpenAIChatModel(
     }
 
     private fun internalStream(prompt: Prompt, previousChatResponse: ChatResponse?): Flux<ChatResponse> {
-        return Flux.fromStream(openAIClient.chat().completions().createStreaming(buildChatCompletionCreateParams(prompt)).stream().map { chunk ->
-            val generations = chunk.choices().map { choice ->
-                buildGeneration(
-                    choice, mapOf(
-                        "id" to chunk.id(),
-                        "index" to choice.index(),
-                        "finishReason" to choice.finishReason().map { reason -> reason.value().name }.orElse("")
-                    )
-                )
-            }.toList()
-            ChatResponse.builder().generations(generations).build()
-        }).flatMap { response ->
-            if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.options, response)) {
-                Flux.defer {
-                    val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
-                    if (toolExecutionResult.returnDirect()) {
-                        Flux.just(
-                            ChatResponse.builder()
-                                .from(response)
-                                .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-                                .build()
-                        )
-                    } else {
-                        this.internalStream(
-                            Prompt(toolExecutionResult.conversationHistory(), prompt.options),
-                            response
-                        )
-                    }
+        val isInsideTool = AtomicBoolean(false)
+        return Flux.fromStream(openAIClient.chat().completions().createStreaming(buildChatCompletionCreateParams(prompt)).stream())
+            .map { chunk ->
+                if (chunkMerger.isStreamingToolFunctionCall(chunk)) {
+                    isInsideTool.set(true)
                 }
-            } else {
-                Flux.just(response)
+                chunk
             }
-        }
+            .windowUntil { chunk ->
+                if (isInsideTool.get() && chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
+                    isInsideTool.set(false)
+                    true
+                } else {
+                    !isInsideTool.get()
+                }
+            }
+            .concatMapIterable { window ->
+                val monoChunk = window.reduce(
+                    ChatCompletionChunk.builder().id("").choices(listOf()).created(0).model("").build()
+                ) { previous, current ->
+                    chunkMerger.merge(previous, current)
+                }
+                listOf(monoChunk)
+            }
+            .flatMap { it }
+            .map { chunk ->
+                val generations = chunk.choices().map { choice ->
+                    buildGeneration(
+                        choice, mapOf(
+                            "id" to chunk.id(),
+                            "index" to choice.index(),
+                            "finishReason" to choice.finishReason().map { reason -> reason.value().name }.orElse("")
+                        )
+                    )
+                }.toList()
+                ChatResponse.builder().generations(generations).build()
+            }.flatMap { response ->
+                if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.options, response)) {
+                    Flux.defer {
+                        val toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response)
+                        if (toolExecutionResult.returnDirect()) {
+                            Flux.just(
+                                ChatResponse.builder()
+                                    .from(response)
+                                    .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+                                    .build()
+                            )
+                        } else {
+                            this.internalStream(
+                                Prompt(toolExecutionResult.conversationHistory(), prompt.options),
+                                response
+                            )
+                        }
+                    }.subscribeOn(Schedulers.boundedElastic())
+                } else {
+                    Flux.just(response)
+                }
+            }
     }
 
     private fun buildRequestPrompt(prompt: Prompt): Prompt {
